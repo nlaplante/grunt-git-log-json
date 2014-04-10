@@ -8,6 +8,45 @@
 
 'use strict';
 
+var jsesc = require('jsesc');
+
+/**
+ * Convert a CSV format string to json
+ *
+ * CSV format is as follow: 'SHA,AUTHOR,DATE,MESSAGE'
+ *
+ * @param input the csv string to convert
+ * @param isLast if false, will append a comma to the end of the input
+ *
+ * @return the json version of input string
+ */
+function csvLineToJson (input, isLast) {
+
+	if (!input || !input.length) {
+		return '';
+	}
+	
+	var json = '{',	
+		splitInput = input.split(','),
+		sha = splitInput[0],
+		author = splitInput[1],
+		date = splitInput[2],
+		message = splitInput[3];
+	
+	json += '"sha":"' + sha + '",';
+	json += '"author":"' + author + '",';
+	json += '"date":"' + date + '",';
+	json += '"message":"' + jsesc(message, { quotes: 'double'}) + '"';
+	
+	json += '}';
+	
+	if (!isLast) {
+		json += ',';
+	}
+	
+	return json;
+}
+
 module.exports = function (grunt) {
 
   grunt.registerTask('git_log_json', 'Generate json from git log via grunt task', function () {
@@ -22,11 +61,14 @@ module.exports = function (grunt) {
     
     grunt.verbose.writeflags(options);
     
-    var commitHashFormat = options.shortHash ? 'h' : 'H';
+    var commitHashFormat = '%' + (options.shortHash ? 'h' : 'H');
+    
+    // create git log in CSV format 
+    var gitLogCommandPrettyFormatString = commitHashFormat + ',%an <%ae>,%ad,%s%n';
   	  	
   	var proc = grunt.util.spawn({
   		cmd: 'git',
-  		args: ['log', '--pretty=format:{%n	"commit": "%' + commitHashFormat + '",%n	"author": "%an <%ae>",%n	"date": "%ad",%n	"message": "%s"%n},']
+  		args: ['log', '--pretty=format:' + gitLogCommandPrettyFormatString]
   	}, function (error, result, code) {
   		
   		var strResult = String(result);
@@ -36,11 +78,44 @@ module.exports = function (grunt) {
 			done();
   		}
   		
-  		var json = "[" + strResult + "]";
-  		json = json.replace('},]', '}]');
-  		json += '\n';
+  		// read each line and convert it to json
+		var length = strResult.length,
+			cPos = 0,
+			cLine = 0,
+			numLines = 0,
+			json = '';
+			
+		while (cPos < length) {
+			var eolPos = strResult.indexOf('\n', cPos);
+			
+			if (eolPos == -1) {
+				eolPos = length;
+			}
+			
+			var line = strResult.substr(cPos, eolPos - cPos);			
+			
+			json += csvLineToJson(line, eolPos == length);
+			
+			cPos = eolPos + 1;
+			
+			if (cPos < length) {
+				numLines++;
+			}
+		}
   		
-  		grunt.file.write(options.dest, json);
+  		if (numLines > 1) {
+  			json = '[' + json + ']';
+  		}
+  		
+  		try {
+  			var parsed = JSON.parse(json);
+  			grunt.file.write(options.dest, json);
+  		}
+  		catch (e) {
+  			grunt.log.writeln('error parsing generated json', e);
+  			grunt.verbose.writeln('This is the generated git log input:');
+  			grunt.verbose.writeln(strResult);
+  		}
   		
   		done();
   	});
