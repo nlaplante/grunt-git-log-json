@@ -33,7 +33,10 @@ module.exports = function (grunt) {
 
     // Configuration to be run (and then tested).
     git_log_json: {
-   	  shortHash: true
+   	  options: {
+   	    dest: 'tmp/CHANGELOG.json',
+   	    shortHash: true
+   	  }
     },
 
     // Unit tests.
