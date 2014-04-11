@@ -55,8 +55,8 @@ module.exports = function (grunt) {
   
   	// Merge task-specific and/or target-specific options with these defaults.
     var options = this.options({
-      shortHash: grunt.option('shortHash') === true,
-      dest: grunt.option('dest') || 'changelog.json'
+      shortHash: false,
+      dest: 'changelog.json'
     });
     
     grunt.verbose.writeflags(options);
