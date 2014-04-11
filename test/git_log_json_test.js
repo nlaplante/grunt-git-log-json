@@ -28,21 +28,16 @@ exports.git_log_json = {
     done();
   },
   default_options: function (test) {
+
     test.expect(1);
 
-    var actual = grunt.file.read('tmp/default_options');
-    var expected = grunt.file.read('test/expected/default_options');
-    test.equal(actual, expected, 'should describe what the default behavior is.');
+    // Test that generated json exists and is valid
+    var json = grunt.file.read('tmp/CHANGELOG.json');
 
-    test.done();
-  },
-  custom_options: function (test) {
-    test.expect(1);
-
-    var actual = grunt.file.read('tmp/custom_options');
-    var expected = grunt.file.read('test/expected/custom_options');
-    test.equal(actual, expected, 'should describe what the custom option(s) behavior is.');
-
+    test.doesNotThrow(function () {
+        JSON.parse(json);
+    });
+    
     test.done();
   }
 };
