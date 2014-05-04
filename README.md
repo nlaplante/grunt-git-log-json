@@ -25,11 +25,20 @@ In your project's Gruntfile, add a section named `git_log_json` to the data obje
 ```js
 grunt.initConfig({
   git_log_json: {
+  	options: {
+  		dest: 'CHANGELOG.json',
+  		shortHash: true
+  	}
   }
 })
 ```
 
 ### Options
+> dest
+The file to write the JSON changelog to
+
+> shortHash
+Use short hashes for commits. Default is `false`
 
 ## Contributing
 In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [Grunt](http://gruntjs.com/).
