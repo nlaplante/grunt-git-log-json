@@ -25,8 +25,10 @@ In your project's Gruntfile, add a section named `git_log_json` to the data obje
 ```js
 grunt.initConfig({
   git_log_json: {
-    shortHash: false,
-    dest: 'path/to/changelog.json'
+  	options: {
+  		dest: 'changelog.json',
+  		shortHash: true
+  	}
   }
 })
 ```
