@@ -14,6 +14,7 @@ module.exports = function (grunt) {
         stable = require('stable'),
         q = require('q'),
         async = require('async'),
+        _ = require('underscore'),
         SEPARATOR = ',';
 
     /**
@@ -29,8 +30,14 @@ module.exports = function (grunt) {
             }
 
             // split each line, then sort
-            var tags = stable(String(result).split('\n'), function (a, b) {
-                return a > b;
+            var tags = _.sortBy(String(result).split('\n'), function (tag) {
+                try {
+                	return parseInt(tag.replace(/\./g, ''));
+                }
+                catch (e) {
+                	grunt.verbose.writeln('Non numeric tag found. Order might get screwed up', tag);
+                	return tag;
+                }
             });
             
             return cb(null, tags);
