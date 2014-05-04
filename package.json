@@ -33,6 +33,9 @@
     "test": "grunt test"
   },
   "dependencies": {
-    "jsesc": "^0.4.3"
+    "async": "^0.8.0",
+    "jsesc": "^0.4.3",
+    "q": "^1.0.1",
+    "stable": "^0.1.5"
   }
 }
