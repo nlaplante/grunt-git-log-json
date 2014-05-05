@@ -2,6 +2,9 @@
 
 > Generate json from git log via grunt task
 
+This grunt plugin will analyze the output of `git log` and generate a JSON formatted data structure listing all commits for each tag.
+For this to work, tags need to use the [semver versioning scheme](http://semver.org/).
+
 ## Getting Started
 This plugin requires Grunt.
 
@@ -44,7 +47,9 @@ Use short hashes for commits. Default is `false`
 In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [Grunt](http://gruntjs.com/).
 
 ## Release History
-_(Nothing yet)_
+0.0.1 First release
+0.0.2 First working release
+0.0.3 Fix tag sorting
 
 ## License
 Copyright (c) 2014 Nicolas Laplante. Licensed under the MIT license.
