@@ -12,7 +12,6 @@ module.exports = function (grunt) {
 
     var jsesc = require('jsesc'),
         async = require('async'),
-        _ = require('underscore'),
         semver = require('semver'),
         SEPARATOR = ',';
 

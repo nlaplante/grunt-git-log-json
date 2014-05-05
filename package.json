@@ -35,7 +35,6 @@
   "dependencies": {
     "async": "^0.8.0",
     "jsesc": "^0.4.3",
-    "underscore": "~1.6.0",
     "semver": "~2.2.1"
   }
 }
