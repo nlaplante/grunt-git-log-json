@@ -182,7 +182,7 @@ module.exports = function (grunt) {
             		
             	if (tag1) {
                 
-                	grunt.log.writeln('getting commits between ' + tag1 + ' and ' + tag2);
+                	grunt.log.writeln('getting commits between ' + tag1 + ' and ' + (tag2 || 'the big bang'));
                 
                 	json += '"' + tag1 + '": [';
                 	                
