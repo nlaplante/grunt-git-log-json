@@ -11,14 +11,13 @@
 module.exports = function (grunt) {
 
     var jsesc = require('jsesc'),
-        stable = require('stable'),
-        q = require('q'),
         async = require('async'),
         _ = require('underscore'),
+        semver = require('semver'),
         SEPARATOR = ',';
 
     /**
-     * List all tags in descending order
+     * List all tags in descending order, according to semver tagging syntax
      */
     function listTags (cb) {
         grunt.util.spawn({
@@ -30,15 +29,7 @@ module.exports = function (grunt) {
             }
 
             // split each line, then sort
-            var tags = _.sortBy(String(result).split('\n'), function (tag) {
-                try {
-                	return parseInt(tag.replace(/\./g, ''));
-                }
-                catch (e) {
-                	grunt.verbose.writeln('Non numeric tag found. Order might get screwed up', tag);
-                	return tag;
-                }
-            });
+            var tags = String(result).split('\n').sort(semver.compare);
             
             return cb(null, tags);
         });
@@ -191,7 +182,7 @@ module.exports = function (grunt) {
             		
             	if (tag1) {
                 
-                	grunt.log.writeln('getting commits between ' + tag1 + ' and ' + tag2);
+                	grunt.log.writeln('getting commits between ' + tag1 + ' and ' + (tag2 || 'the big bang'));
                 
                 	json += '"' + tag1 + '": [';
                 	                
