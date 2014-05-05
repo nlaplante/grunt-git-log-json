@@ -50,6 +50,7 @@ In lieu of a formal styleguide, take care to maintain the existing coding style.
 0.0.1 First release
 0.0.2 First working release
 0.0.3 Fix tag sorting
+0.0.4 Use semver versioning scheme
 
 ## License
 Copyright (c) 2014 Nicolas Laplante. Licensed under the MIT license.
