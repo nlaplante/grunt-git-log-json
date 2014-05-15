@@ -67,14 +67,36 @@ module.exports = function (grunt) {
     var jsesc = require('jsesc'),
         async = require('async'),
         tagComparator = require('semver').compare,
+        gitCommand = 'git',
         SEPARATOR = ',';
+    
+    /**
+     * Do pre-task checks
+     */
+    function checkPrerequisites (cb) {
+    
+    }
+    
+    /**
+     * Verify that the git command exists
+     */
+    function verifyGitExecutableExistence (cb) {
+    
+    }
+    
+    /**
+     * Verify that we are in a Git repository
+     */    
+    function verifyGitRepo (cb) {
+    	
+    }
 
     /**
      * List all tags in descending order, according to semver tagging syntax
      */
     function listTags (cb) {
         grunt.util.spawn({
-            cmd: 'git',
+            cmd: gitCommand,
             args: ['tag', '-l']
         }, function (error, result, code) {
             if (code != 0) {
@@ -94,7 +116,7 @@ module.exports = function (grunt) {
     function gitLogBetween(startTag, endTag, formatString, cb) {
     	
         grunt.util.spawn({
-            cmd: 'git',
+            cmd: gitCommand,
             args: ['log', '--pretty=format:' + formatString, startTag + '..' + endTag]
         }, function (error, result, code) {
             if (code != 0) {
