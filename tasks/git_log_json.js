@@ -66,7 +66,7 @@ module.exports = function (grunt) {
 
     var jsesc = require('jsesc'),
         async = require('async'),
-        semver = require('semver'),
+        tagComparator = require('semver').compare,
         SEPARATOR = ',';
 
     /**
@@ -82,7 +82,7 @@ module.exports = function (grunt) {
             }
 
             // split each line, then sort
-            var tags = String(result).split('\n').sort(semver.compare);
+            var tags = String(result).split('\n').sort(tagComparator);
             
             return cb(null, tags);
         });
