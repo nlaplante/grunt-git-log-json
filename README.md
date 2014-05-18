@@ -50,10 +50,10 @@ Regex object used to restrict the changelog to the matching tag names. Default i
 In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [Grunt](http://gruntjs.com/).
 
 ## Release History
-0.0.1 First release
-0.0.2 First working release
-0.0.3 Fix tag sorting
-0.0.4 Use semver versioning scheme
+* 0.0.4 Use semver versioning scheme
+* 0.0.3 Fix tag sorting
+* 0.0.2 First working release
+* 0.0.1 First release
 
 ## License
 Copyright (c) 2014 Nicolas Laplante. Licensed under the MIT license.
