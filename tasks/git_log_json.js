@@ -74,7 +74,19 @@ module.exports = function (grunt) {
      * Do pre-task checks
      */
     function checkPrerequisites (cb) {
-    
+    	verifyGitExecutableExistence(function (error, result) {
+    		if (error) {
+    			return cb(error, null);
+    		}
+    		
+    		verifyGitRepo(function (error, result) {
+    			if (error) {
+    				return cb(error, null);
+    			}
+    			
+    			cb(null, null);
+    		});
+    	});
     }
     
     /**
@@ -82,13 +94,42 @@ module.exports = function (grunt) {
      */
     function verifyGitExecutableExistence (cb) {
     
+    	grunt.verbose.writeln('Checking for ' + gitCommand + ' command existence');
+    	
+    	grunt.util.spawn({
+    		cmd: 'which',
+    		args: [gitCommand]
+    	}, function (error, result, code) {
+    		if (code != 0) {
+    			grunt.verbose.error(gitCommand + ' not found (' + code + ')');
+    			cb(error, null);
+    			return;
+    		}
+    		
+    		cb(null, null);
+    	});
     }
     
     /**
      * Verify that we are in a Git repository
      */    
     function verifyGitRepo (cb) {
+    
+    	grunt.verbose.writeln('Checking if we are in a git repository');
     	
+    	grunt.util.spawn({
+    		cmd: gitCommand,
+    		args: ['status']
+    	}, function (error, result, code) {
+
+    		if (code != 0) {
+    			grunt.verbose.error('Not a git repository. Make sure you\'re working in a git repository and not from a downloaded archive');
+    			cb(error, null);
+    			return;
+    		}
+    		
+    		cb(null, null);
+    	});
     }
 
     /**
@@ -227,80 +268,88 @@ module.exports = function (grunt) {
             '%an <%ae>' + SEPARATOR + 
             '%ad' + SEPARATOR + 
             '%s%n';
+            
+            
+        checkPrerequisites(function (error, result) {
+        
+        	if (error) {
+        		done();
+        		return;
+        	}
+        	
+        	listTags(function (err, tags) {
+		        if (err) {
+		            grunt.log.writeln('error getting tag list', err);
+		            return done();
+		        }
+		        
+		        tags = tags.reverse();
+		        
+		        grunt.verbose.writeln('Tags:', tags);
 
-        listTags(function (err, tags) {
-            if (err) {
-                grunt.log.writeln('error getting tag list', err);
-                return done();
-            }
-            
-            tags = tags.reverse();
-            
-            grunt.verbose.writeln('Tags:', tags);
+		        var json = '{';
+		        
+		        var loopMax = tags.length;
+		        var tagTwins = [];
 
-            var json = '{';
-            
-            var loopMax = tags.length;
-            var tagTwins = [];
-
-            for (var i = 0; i < loopMax; i++) {
-            
-                var tag1 = tags[i], 
-                    tag2 = i < loopMax - 1 ? tags[i + 1] : '';
-                    
-                tagTwins.push([tag2, tag1]);
-            }
-            
-            async.eachSeries(tagTwins, function (value, cb) {
-            	var tag1 = value[1],
-            		tag2 = value[0];
-            		
-            	if (tag1) {
-                
-                	grunt.log.writeln('getting commits between ' + tag1 + ' and ' + (tag2 || 'the big bang'));
-                
-                	json += '"' + tag1 + '": [';
-                	                
-                    gitLogBetween(tag2, tag1, gitLogCommandPrettyFormatString, function (err, jsonString) {
-                    
-                    	if (err) {
-	                    	grunt.log.writeln(err);
-                        	return cb(err, null);
-                    	}
-	                    
-	                    json += jsonString;
-	                    
-	                    json += '],';
-                    
-						cb(null, json);
-	                });	
-	            }
-            
-    	        }, function (err, result) {
-            
-		        	if (err) {
-			        	grunt.log.writeln('error occured!', err);
-						return	done();
-		        	}
-		        	
-			        json += '}';
+		        for (var i = 0; i < loopMax; i++) {
+		        
+		            var tag1 = tags[i], 
+		                tag2 = i < loopMax - 1 ? tags[i + 1] : '';
+		                
+		            tagTwins.push([tag2, tag1]);
+		        }
+		        
+		        async.eachSeries(tagTwins, function (value, cb) {
+		        	var tag1 = value[1],
+		        		tag2 = value[0];
+		        		
+		        	if (tag1) {
+		            
+		            	grunt.log.writeln('getting commits between ' + tag1 + ' and ' + (tag2 || 'the big bang'));
+		            
+		            	json += '"' + tag1 + '": [';
+		            	                
+		                gitLogBetween(tag2, tag1, gitLogCommandPrettyFormatString, function (err, jsonString) {
+		                
+		                	if (err) {
+			                	grunt.log.writeln(err);
+		                    	return cb(err, null);
+		                	}
+			                
+			                json += jsonString;
+			                
+			                json += '],';
+		                
+							cb(null, json);
+			            });	
+			        }
+		        
+			        }, function (err, result) {
+		        
+				    	if (err) {
+					    	grunt.log.writeln('error occured!', err);
+							return	done();
+				    	}
+				    	
+					    json += '}';
 				
-					json = json.replace('],}', ']}');
+						json = json.replace('],}', ']}');
 				
-					try {
-						var parsed = JSON.parse(json);
-						grunt.file.write(options.dest, json);
-					}
-					catch (e) {
-						grunt.log.writeln('error parsing generated json', e);
-						grunt.log.writeln(json);
-						grunt.verbose.writeln('This is the generated git log input:');
-						grunt.verbose.writeln(strResult);
-					}
+						try {
+							var parsed = JSON.parse(json);
+							grunt.file.write(options.dest, json);
+						}
+						catch (e) {
+							grunt.log.writeln('error parsing generated json', e);
+							grunt.log.writeln(json);
+							grunt.verbose.writeln('This is the generated git log input:');
+							grunt.verbose.writeln(strResult);
+						}
 					
-					done();
-		        });
-            
+						done();
+				    });
+	        });
         });
     });
 };
