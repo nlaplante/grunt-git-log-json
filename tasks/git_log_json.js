@@ -135,7 +135,7 @@ module.exports = function (grunt) {
     /**
      * List all tags in descending order, according to semver tagging syntax
      */
-    function listTags (cb) {
+    function listTags (regex, cb) {
         grunt.util.spawn({
             cmd: gitCommand,
             args: ['tag', '-l']
@@ -145,7 +145,17 @@ module.exports = function (grunt) {
             }
 
             // split each line, then sort
-            var tags = String(result).split('\n').sort(tagComparator);
+            var tags = String(result).split('\n');
+            
+            // if regex, filter out unwanted tags
+            if (regex) {
+            	tags = tags.filter(function (item) {
+            		return regex.test(item);
+            	});
+            }
+            
+            // sort tags
+            tags = tags.sort(tagComparator);
             
             return cb(null, tags);
         });
@@ -256,7 +266,8 @@ module.exports = function (grunt) {
       	// Merge task-specific and/or target-specific options with these defaults.
         var options = this.options({
           shortHash: false,
-          dest: 'changelog.json'
+          dest: 'changelog.json',
+          filter: null
         });
         
         grunt.verbose.writeflags(options);
@@ -277,7 +288,7 @@ module.exports = function (grunt) {
         		return;
         	}
         	
-        	listTags(function (err, tags) {
+        	listTags(options.filter, function (err, tags) {
 		        if (err) {
 		            grunt.log.writeln('error getting tag list', err);
 		            return done();
