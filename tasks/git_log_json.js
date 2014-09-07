@@ -66,7 +66,7 @@ module.exports = function (grunt) {
 
     var jsesc = require('jsesc'),
         async = require('async'),
-        tagComparator = require('semver').compare,
+        semver = require('semver'),
         gitCommand = 'git',
         SEPARATOR = ',';
     
@@ -147,15 +147,25 @@ module.exports = function (grunt) {
             // split each line, then sort
             var tags = String(result).split('\n');
             
-            // if regex, filter out unwanted tags
-            if (regex) {
-            	tags = tags.filter(function (item) {
-            		return regex.test(item);
-            	});
-            }
+            // filter out unwanted tags
+
+		    tags = tags.filter(function (item) {
+		       	// first check if we are a valid semver string
+		       	if (!semver.valid(item)) {
+			       	grunt.log.errorlns('tag: ' + item + ' is not semver compliant; discarded');
+			       	return false;
+		       	}	
+		       	
+		       	// semver is valid; check if we match (optional) regex
+		       	if (regex) {
+			       	return regex.test(item);
+		       	}
+		       	
+		       	return true;
+			});
             
             // sort tags
-            tags = tags.sort(tagComparator);
+            tags = semver.sort(tags);
             
             return cb(null, tags);
         });
