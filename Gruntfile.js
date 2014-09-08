@@ -35,7 +35,8 @@ module.exports = function (grunt) {
     git_log_json: {
    	  options: {
    	    dest: 'tmp/CHANGELOG.json',
-   	    shortHash: true
+   	    shortHash: true,
+   	    pretty: true
    	  }
     },
 
