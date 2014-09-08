@@ -148,7 +148,6 @@ module.exports = function (grunt) {
             var tags = String(result).split('\n');
             
             // filter out unwanted tags
-
 		    tags = tags.filter(function (item) {
 		       	// first check if we are a valid semver string
 		       	if (!semver.valid(item)) {
@@ -176,23 +175,25 @@ module.exports = function (grunt) {
      */
     function gitLogBetween(startTag, endTag, formatString, cb) {
     	
-        grunt.util.spawn({
+    	var commandArgs = {
             cmd: gitCommand,
-            args: ['log', '--pretty=format:' + formatString, startTag + '..' + endTag]
-        }, function (error, result, code) {
+            args: ['log', '--pretty=format:' + formatString, (startTag ? startTag : '') + (endTag ? '..' + endTag : '')]
+        };
+        
+        grunt.verbose.writeflags(commandArgs);
+        
+        grunt.util.spawn(commandArgs, function (error, result, code) {
+        
             if (code != 0) {
-                return cb(error, null);                
+                return cb(error, 'git command return value: ' + code);                
             }
 
-            var strResult = String(result);
-
              // read each line and convert it to json
-	        var length = strResult.length,
+            var strResult = String(result),
+            	length = strResult.length,
 		        cPos = 0,
-		        cLine = 0,
-		        numLines = 0,
-		        json = '';
-		
+		        jsonObject = [];
+			
 	        while (cPos < length) {
 		        var eolPos = strResult.indexOf('\n', cPos);
 		
@@ -200,24 +201,17 @@ module.exports = function (grunt) {
 			        eolPos = length;
 		        }
 		
-		        var line = strResult.substr(cPos, eolPos - cPos);			
-		
-		        json += csvLineToJson(line, eolPos == length);
+		        var line = strResult.substr(cPos, eolPos - cPos),
+		        	lineData = csvLineToJson(line, eolPos == length);
+				
+				if (lineData) {
+					jsonObject.push(lineData);
+				}
 		
 		        cPos = eolPos + 1;
-		
-		        if (cPos < length) {
-			        numLines++;
-		        }
-	        }
-	
-	        if (numLines > 1) {
-		        //json = '[' + json + ']';
 	        }
 	        
-	        cb(null, json);
-	        
-	        
+	        cb(null, jsonObject);
         });
     }
 
@@ -234,11 +228,11 @@ module.exports = function (grunt) {
     function csvLineToJson (input, isLast) {
 
 	    if (!input || !input.length) {
-		    return '';
+		    return null;
 	    }
 	
-	    var json = '{',	
-		    splitInput = input.split(SEPARATOR),
+	    var jsonObject = {},
+	    	splitInput = input.split(SEPARATOR),
 		    sha = splitInput[0],
 		    author = splitInput[1],
 		    date = splitInput[2],
@@ -253,19 +247,13 @@ module.exports = function (grunt) {
 	            message += splitInput[i];
 	        }
 	    }
-	
-	    json += '"sha":"' + sha + '",';
-	    json += '"author":"' + author + '",';
-	    json += '"date":"' + date + '",';
-	    json += '"message":"' + jsesc(message, { quotes: 'double'}) + '"';
-	
-	    json += '}';
-	
-	    if (!isLast) {
-		    json += ',';
-	    }
-	
-	    return json;
+	    
+	    jsonObject.sha = sha;
+	    jsonObject.author = author;
+	    jsonObject.date = date;
+	    jsonObject.message = jsesc(message, {quotes: 'double'});
+	    
+	    return jsonObject;
     }
 
     // register our Grunt task
@@ -277,7 +265,8 @@ module.exports = function (grunt) {
         var options = this.options({
           shortHash: false,
           dest: 'changelog.json',
-          filter: null
+          filter: null,
+          pretty: false
         });
         
         grunt.verbose.writeflags(options);
@@ -289,7 +278,6 @@ module.exports = function (grunt) {
             '%an <%ae>' + SEPARATOR + 
             '%ad' + SEPARATOR + 
             '%s%n';
-            
             
         checkPrerequisites(function (error, result) {
         
@@ -307,16 +295,15 @@ module.exports = function (grunt) {
 		        tags = tags.reverse();
 		        
 		        grunt.verbose.writeln('Tags:', tags);
-
-		        var json = '{';
 		        
+		        var jsonObject = {};		        
 		        var loopMax = tags.length;
 		        var tagTwins = [];
 
 		        for (var i = 0; i < loopMax; i++) {
 		        
 		            var tag1 = tags[i], 
-		                tag2 = i < loopMax - 1 ? tags[i + 1] : '';
+		                tag2 = i < loopMax - 1 ? tags[i + 1] : null;
 		                
 		            tagTwins.push([tag2, tag1]);
 		        }
@@ -328,48 +315,39 @@ module.exports = function (grunt) {
 		        	if (tag1) {
 		            
 		            	grunt.log.writeln('getting commits between ' + tag1 + ' and ' + (tag2 || 'the big bang'));
-		            
-		            	json += '"' + tag1 + '": [';
+		            	
+		            	var firstTag = tag2 ? tag2 :  tag1,
+		            		lastTag = tag1 && firstTag != tag1 ? tag1 : null;
 		            	                
-		                gitLogBetween(tag2, tag1, gitLogCommandPrettyFormatString, function (err, jsonString) {
+		                gitLogBetween(firstTag, lastTag, gitLogCommandPrettyFormatString, function (err, jsonLogObject) {
 		                
 		                	if (err) {
 			                	grunt.log.writeln(err);
 		                    	return cb(err, null);
 		                	}
-			                
-			                json += jsonString;
-			                
-			                json += '],';
+		                	
+		                	jsonObject[tag1] = jsonLogObject;
 		                
-							cb(null, json);
+							cb(null, jsonObject);
 			            });	
 			        }
 		        
 			        }, function (err, result) {
 		        
 				    	if (err) {
-					    	grunt.log.writeln('error occured!', err);
+					    	grunt.log.errorlns('error occured!', err);
 							return	done();
 				    	}
-				    	
-					    json += '}';
-				
-						json = json.replace('],}', ']}');
 				
 						try {
-							var parsed = JSON.parse(json);
-							grunt.file.write(options.dest, json);
+							grunt.file.write(options.dest, JSON.stringify(jsonObject, null, options.pretty ? '\t' : null));
 						}
 						catch (e) {
-							grunt.log.writeln('error parsing generated json', e);
-							grunt.log.writeln(json);
-							grunt.verbose.writeln('This is the generated git log input:');
-							grunt.verbose.writeln(strResult);
+							grunt.log.errorlns('error writing json data to ' + options.dest, e);
 						}
 					
 						done();
-				    });
+			    });
 	        });
         });
     });
